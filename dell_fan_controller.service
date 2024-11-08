@@ -1,0 +1,13 @@
+[Unit]
+Description=Dell PowerEdge Fan Controller Service
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/Dell_iDRAC_fan_controller_with_NVIDIA
+ExecStart=/bin/bash /opt/Dell_iDRAC_fan_controller_with_NVIDIA/Dell_idrac_fan_controller.sh
+Restart=always
+RestartSec=5
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target
