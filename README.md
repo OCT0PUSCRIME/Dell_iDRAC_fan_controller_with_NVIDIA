@@ -1,26 +1,12 @@
 <div id="top"></div>
 
-> **Warning** If you update to the latest version, be sure to replace "CPU_TEMPERATURE_TRESHOLD" environment variable with "CPU_TEMPERATURE_T<ins>H</ins>RESHOLD" which was a typo
+Scripts to control a PowerEdge server fan speed via IPMI with thresholds for CPU and NVIDIA GPU temperatures. Use at your own risk.
 
-# Dell iDRAC fan controller Docker image
-Download Docker image from :
-- [Docker Hub](https://hub.docker.com/r/tigerblue77/dell_idrac_fan_controller)
-- [GitHub Containers Repository](https://github.com/tigerblue77/Dell_iDRAC_fan_controller_Docker/pkgs/container/dell_idrac_fan_controller)
+## Console log example
 
-<!-- TABLE OF CONTENTS -->
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li><a href="#container-console-log-example">Container console log example</a></li>
-    <li><a href="#supported-architectures">Supported architectures</a></li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#parameters">Parameters</a></li>
-    <li><a href="#troubleshooting">Troubleshooting</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-  </ol>
-</details>
-
-## Container console log example
+```
+systemctl status dell_fan_controller
+```
 
 ![image](https://user-images.githubusercontent.com/37409593/216442212-d2ad7ff7-0d6f-443f-b8ac-c67b5f613b83.png)
 
@@ -56,91 +42,27 @@ ipmitool -I lanplus \
   sdr elist all
 ```
 
-<p align="right">(<a href="#top">back to top</a>)</p>
-
-<!-- SUPPORTED ARCHITECTURES -->
-## Supported architectures
-
-This Docker container is currently built and available for the following CPU architectures :
-- AMD64
-- ARM64
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 <!-- USAGE -->
-## Usage
+## Setup
 
-1. with local iDRAC:
-
-```bash
-docker run -d \
-  --name Dell_iDRAC_fan_controller \
-  --restart=unless-stopped \
-  -e IDRAC_HOST=local \
-  -e FAN_SPEED=<decimal or hexadecimal fan speed> \
-  -e CPU_TEMPERATURE_THRESHOLD=<decimal temperature threshold> \
-  -e CHECK_INTERVAL=<seconds between each check> \
-  -e DISABLE_THIRD_PARTY_PCIE_CARD_DELL_DEFAULT_COOLING_RESPONSE=<true or false> \
-  --device=/dev/ipmi0:/dev/ipmi0:rw \
-  tigerblue77/dell_idrac_fan_controller:latest
+1. Clone the repo:
 ```
-
-2. with LAN iDRAC:
-
-```bash
-docker run -d \
-  --name Dell_iDRAC_fan_controller \
-  --restart=unless-stopped \
-  -e IDRAC_HOST=<iDRAC IP address> \
-  -e IDRAC_USERNAME=<iDRAC username> \
-  -e IDRAC_PASSWORD=<iDRAC password> \
-  -e FAN_SPEED=<decimal or hexadecimal fan speed> \
-  -e CPU_TEMPERATURE_THRESHOLD=<decimal temperature threshold> \
-  -e CHECK_INTERVAL=<seconds between each check> \
-  -e DISABLE_THIRD_PARTY_PCIE_CARD_DELL_DEFAULT_COOLING_RESPONSE=<true or false> \
-  tigerblue77/dell_idrac_fan_controller:latest
+git clone https://github.com/OCT0PUSCRIME/Dell_iDRAC_fan_controller_with_NVIDIA.git /opt/Dell_iDRAC_fan_controller_with_NVIDIA
 ```
-
-`docker-compose.yml` examples:
-
-1. to use with local iDRAC:
-
-```yml
-version: '3.8'
-
-services:
-  Dell_iDRAC_fan_controller:
-    image: tigerblue77/dell_idrac_fan_controller:latest
-    container_name: Dell_iDRAC_fan_controller
-    restart: unless-stopped
-    environment:
-      - IDRAC_HOST=local
-      - FAN_SPEED=<decimal or hexadecimal fan speed>
-      - CPU_TEMPERATURE_THRESHOLD=<decimal temperature threshold>
-      - CHECK_INTERVAL=<seconds between each check>
-      - DISABLE_THIRD_PARTY_PCIE_CARD_DELL_DEFAULT_COOLING_RESPONSE=<true or false>
-    devices:
-      - /dev/ipmi0:/dev/ipmi0:rw
+2. Edit the .env file with your iDRAC HOST, credentials, and preferred fan settings
 ```
-
-2. to use with LAN iDRAC:
-
-```yml
-version: '3.8'
-
-services:
-  Dell_iDRAC_fan_controller:
-    image: tigerblue77/dell_idrac_fan_controller:latest
-    container_name: Dell_iDRAC_fan_controller
-    restart: unless-stopped
-    environment:
-      - IDRAC_HOST=<iDRAC IP address>
-      - IDRAC_USERNAME=<iDRAC username>
-      - IDRAC_PASSWORD=<iDRAC password>
-      - FAN_SPEED=<decimal or hexadecimal fan speed>
-      - CPU_TEMPERATURE_THRESHOLD=<decimal temperature threshold>
-      - CHECK_INTERVAL=<seconds between each check>
-      - DISABLE_THIRD_PARTY_PCIE_CARD_DELL_DEFAULT_COOLING_RESPONSE=<true or false>
+cd /opt/Dell_iDRAC_fan_controller_with_NVIDIA
+nano .env
+```
+3. Create a service with the service file
+```
+cp dell_fan_controller.service /etc/systemd/system/
+```
+```
+systemctl daemon-reload && systemctl start dell_fan_controller && systemctl enable dell_fan_controller
 ```
 
 <p align="right">(<a href="#top">back to top</a>)</p>
@@ -153,10 +75,10 @@ All parameters are optional as they have default values (including default iDRAC
 - `IDRAC_HOST` parameter can be set to "local" or to your distant iDRAC's IP address. **Default** value is "local".
 - `IDRAC_USERNAME` parameter is only necessary if you're adressing a distant iDRAC. **Default** value is "root".
 - `IDRAC_PASSWORD` parameter is only necessary if you're adressing a distant iDRAC. **Default** value is "calvin".
-- `FAN_SPEED` parameter can be set as a decimal (from 0 to 100%) or hexadecimaladecimal value (from 0x00 to 0x64) you want to set the fans to. **Default** value is 5(%).
-- `CPU_TEMPERATURE_THRESHOLD` parameter is the T°junction (junction temperature) threshold beyond which the Dell fan mode defined in your BIOS will become active again (to protect the server hardware against overheat). **Default** value is 50(°C).
+- `FAN_SPEED` parameter can be set as a decimal (from 0 to 100%) or hexadecimaladecimal value (from 0x00 to 0x64) you want to set the fans to. **Default** value is 25(%).
+- `CPU_TEMPERATURE_THRESHOLD` parameter is the CPU temperature threshold beyond which the Dell fan mode defined in your BIOS will become active again (to protect the server hardware against overheat). **Default** value is 50(°C).
+- `GPU_TEMPERATURE_THRESHOLD` parameter is the GPU temperature threshold beyond which the Dell fan mode defined in your BIOS will become active again (to protect the server hardware against overheat). **Default** value is 75(°C).
 - `CHECK_INTERVAL` parameter is the time (in seconds) between each temperature check and potential profile change. **Default** value is 60(s).
-- `DISABLE_THIRD_PARTY_PCIE_CARD_DELL_DEFAULT_COOLING_RESPONSE` parameter is a boolean that allows to disable third-party PCIe card Dell default cooling response. **Default** value is false.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
