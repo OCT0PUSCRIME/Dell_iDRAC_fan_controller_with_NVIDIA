@@ -56,34 +56,10 @@ function retrieve_temperatures () {
   else
     EXHAUST_TEMPERATURE="-"
   fi
+
+  # Retrieve NVIDIA GPU temperature
+  GPU_TEMPERATURE=$(nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader,nounits | head -n 1)
 }
-
-function enable_third_party_PCIe_card_Dell_default_cooling_response () {
-  # We could check the current cooling response before applying but it's not very useful so let's skip the test and apply directly
-  ipmitool -I $IDRAC_LOGIN_STRING raw 0x30 0xce 0x00 0x16 0x05 0x00 0x00 0x00 0x05 0x00 0x00 0x00 0x00 > /dev/null
-}
-
-function disable_third_party_PCIe_card_Dell_default_cooling_response () {
-  # We could check the current cooling response before applying but it's not very useful so let's skip the test and apply directly
-  ipmitool -I $IDRAC_LOGIN_STRING raw 0x30 0xce 0x00 0x16 0x05 0x00 0x00 0x00 0x05 0x00 0x01 0x00 0x00 > /dev/null
-}
-
-# Returns :
-# - 0 if third-party PCIe card Dell default cooling response is currently DISABLED
-# - 1 if third-party PCIe card Dell default cooling response is currently ENABLED
-# - 2 if the current status returned by ipmitool command output is unexpected
-# function is_third_party_PCIe_card_Dell_default_cooling_response_disabled() {
-#   THIRD_PARTY_PCIE_CARD_COOLING_RESPONSE=$(ipmitool -I $IDRAC_LOGIN_STRING raw 0x30 0xce 0x01 0x16 0x05 0x00 0x00 0x00)
-
-#   if [ "$THIRD_PARTY_PCIE_CARD_COOLING_RESPONSE" == "16 05 00 00 00 05 00 01 00 00" ]; then
-#     return 0
-#   elif [ "$THIRD_PARTY_PCIE_CARD_COOLING_RESPONSE" == "16 05 00 00 00 05 00 00 00 00" ]; then
-#     return 1
-#   else
-#     echo "Unexpected output: $THIRD_PARTY_PCIE_CARD_COOLING_RESPONSE" >&2
-#     return 2
-#   fi
-# }
 
 # Prepare traps in case of container exit
 function gracefull_exit () {
@@ -96,7 +72,6 @@ function gracefull_exit () {
 # Helps debugging when people are posting their output
 function get_Dell_server_model () {
   IPMI_FRU_content=$(ipmitool -I $IDRAC_LOGIN_STRING fru 2>/dev/null) # FRU stands for "Field Replaceable Unit"
-
   SERVER_MANUFACTURER=$(echo "$IPMI_FRU_content" | grep "Product Manufacturer" | awk -F ': ' '{print $2}')
   SERVER_MODEL=$(echo "$IPMI_FRU_content" | grep "Product Name" | awk -F ': ' '{print $2}')
 
@@ -109,4 +84,5 @@ function get_Dell_server_model () {
   if [ -z "$SERVER_MODEL" ]; then
     SERVER_MODEL=$(echo "$IPMI_FRU_content" | tr -s ' ' | grep "Board Product :" | awk -F ': ' '{print $2}')
   fi
+
 }
