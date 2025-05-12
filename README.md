@@ -155,3 +155,8 @@ Contributions are welcome to improve this project. To contribute:
 Any feedback or suggestions can also be submitted as issues.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
+
+
+---
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Q5Q21EW45A)
